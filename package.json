@@ -1,11 +1,22 @@
 {
-  "dependencies": {
-    "express": "^4.19.2"
-  },
-  "devDependencies": {
-    "@types/express": "^4.17.21",
-    "eslint": "^9.6.0",
-    "nodemon": "^3.1.4",
-    "prettier": "^3.3.2"
-  }
+	"dependencies": {
+		"express": "^4.19.2",
+		"faker": "^5.5.3"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.21",
+		"eslint": "^9.6.0",
+		"nodemon": "^3.1.4",
+		"prettier": "^3.3.2"
+	},
+	"name": "backend",
+	"version": "1.0.0",
+	"main": "app.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "nodemon app.js"
+	},
+	"author": "priyobrato.das",
+	"license": "ISC",
+	"description": ""
 }

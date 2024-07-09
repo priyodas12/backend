@@ -1,7 +1,9 @@
-
-const { isUtf8 } = require("buffer");
+const faker = require('faker');
+const { isUtf8 } = require('buffer');
+const { error } = require('console');
+const { getRandomValues } = require('crypto');
 const express = require('express');
-const fs = require('fs');
+const fs = require('fs').promises;
 const path = require('path');
 
 const app = express();
@@ -12,10 +14,10 @@ app.use(express.json());
 
 // Simple route handler
 app.get('/ping', (req, res) => {
-	res.send('Hello, World!');
+	res.send('Hello, User!');
 });
 
-app.get('/users/:id', getUsers);
+app.get('/users/:userId', getUserById);
 
 app.get('/users/', getAllUsers);
 
@@ -24,29 +26,51 @@ app.listen(port, () => {
 	console.log(`Server is running on http://localhost:${port}`);
 });
 
-function getAllUsers(req, res) {
+async function loadAllUsers() {
+	try {
+		const filePath = path.join(__dirname, 'users.json');
+		const results = await fs.readFile(filePath, { encoding: 'utf-8' });
+		const allUserArray = JSON.parse(results);
 
-	fs.readFile('users.json', { encoding: 'utf-8' }, (error, results) => {
-		if (error) {
-			console.error('Error reading file:', error);
-			return;
-		}
-		console.log(results.length);
-		let users = JSON.parse(results);
-		return res.send(users);
-	});
+		const newUserArray = allUserArray.map((obj) => ({
+			...obj,
+			sal: Math.round(Math.random() * 10000000),
+			email: faker.internet.email(),
+			isActive: faker.datatype.boolean(),
+		}));
+
+		return newUserArray;
+	} catch (error) {
+		console.error('Error reading file:', error);
+		return;
+	}
+}
+async function getAllUsers(req, res) {
+	try {
+		console.log('Requested:: ', req.originalUrl);
+
+		const usersList = await loadAllUsers(); // Wait for loadAllUsers to complete
+		//console.log('Total Users List:', usersList);
+
+		return res.send(usersList);
+	} catch (error) {
+		console.error('Error fetching users:', error);
+		return res.status(500).send('Error fetching users');
+	}
 }
 
+async function getUserById(req, res) {
+	try {
+		console.log('Requested:: ', req.originalUrl);
+		const userId = +req.params.userId;
 
-function getUsers(req, res) {
-	const startUserId = req.params.id;
-	fs.readFile("users.json", { encoding: "utf-8" }, (error, results) => {
-		 if (error) {
-				console.error('Error reading file:', error);
-				return;
-		}
-		const users  = JSON.parse(results);
-		console.log(users.length);
-		return res.send(users.slice(startUserId - 1, 20));
-	});
+		const usersList = await loadAllUsers(); // Wait for loadAllUsers to complete
+		//console.log('Total Users List:', usersList);
+		const searchedUser = usersList.filter((usr) => usr.userId === userId);
+
+		return res.send(searchedUser);
+	} catch (error) {
+		console.error('Error fetching users:', error);
+		return res.status(500).send('Error fetching users');
+	}
 }
