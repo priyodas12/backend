@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Backend Application</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Node Backend Application</h1>
+        <div class="status" id="status">
+            <h3>Server Status: <span id="server-status">Up & Serving</span></h3>
+        </div>
+        <div class="time" id="time">
+            <h3>Current Time: <span id="current-time"></span></h3>
+        </div>
+    </div>
+
+    <script>
+        const status = document.getElementById( 'status' );
+        status.style.color = 'blue';
+
+        const time = document.getElementById( 'time' );
+        time.style.color = 'blue';
+
+        function updateTime ()
+        {
+            const timeElement = document.getElementById( 'current-time' );
+            const now = new Date();
+            timeElement.textContent = now;
+            timeElement.style.color = 'orange';
+        }
+        setInterval( updateTime, 1000 );
+        const serverStatus = document.getElementById( 'server-status' );
+        const isServerOnline = true;
+
+        if ( isServerOnline )
+        {
+            serverStatus.textContent = 'Online';
+            serverStatus.style.color = 'green';
+            serverStatus.style.fontFamily = 'bold'
+        } else
+        {
+            serverStatus.textContent = 'Offline';
+            serverStatus.style.color = 'red';
+        }
+
+        updateTime();
+    </script>
+</body>
+
+</html>
