@@ -128,12 +128,14 @@ async function searchUserByName(req, res) {
 		console.log('Requested:: ', req.originalUrl);
 		const searchedString = req.params.searchString;
 
-		console.log('searching for: ', searchedString);
+		console.log('Searching for username: ', searchedString);
 
 		const usersList = await loadAllUsers(); // Wait for loadAllUsers to complete
 
 		const searchedUsersResults = usersList.filter((obj) => {
-			return obj.username.includes(searchedString);
+			return obj.username
+				.toLowerCase()
+				.includes(searchedString.toLowerCase());
 		});
 
 		return res.send(searchedUsersResults);
