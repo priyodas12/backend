@@ -5,13 +5,30 @@ const { getRandomValues } = require('crypto');
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
+const cors = require('cors');
 const { Http2ServerRequest } = require('http2');
+const mongoose = require('mongoose');
+const connectDB = require('./mongo-db');
+const User = require('./model/model');
 
 const app = express();
 const port = 3000;
 
 // Middleware to parse JSON bodies
 app.use(express.json());
+
+const corsOptions = {
+	credentials: true,
+	origin: [
+		'http://localhost:3000',
+		'http://localhost:4200',
+		'http://localhost:1300',
+	],
+};
+
+connectDB();
+
+app.use(cors(corsOptions));
 
 app.use(express.static(path.join(__dirname, './Template/')));
 
@@ -26,12 +43,127 @@ app.get('/api/v1/users/:userId', getUserById);
 app.get('/api/v1/users/search/:searchString', searchUserByName);
 app.post('/api/v1/users/', createUser);
 app.delete('/api/v1/users/:userId', deleteUser);
+app.put('/api/v1/users/', updateUser);
+
+app.get('/api/v2/users/', getAllUsersV2);
+app.get('/api/v2/users/:userId', getUserByIdV2);
+app.post('/api/v2/users/', createUserV2);
+app.delete('/api/v2/users/:userId', deleteUserV2);
+app.put('/api/v2/users/', updateUserV2);
 
 // Start the server
 app.listen(port, () => {
 	console.log(`Server is running on http://localhost:${port}`);
 });
 
+///CURD operation in MongoDB////////////////////////////////////////////////////////////////
+
+async function getAllUsersV2(req, res) {
+	try {
+		const users = await User.find();
+		res.json(users);
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send('Server Error');
+	}
+}
+
+async function createUserV2(req, res) {
+	const { username, fullName, age, gender } = req.body;
+
+	try {
+		let userId = Math.floor(Math.random() * 100000000);
+		let sal = Math.random() * 100000;
+		let email = faker.internet.email();
+		let address =
+			faker.location.streetAddress() + ', ' + faker.location.zipCode();
+		let favoriteColor = faker.color.human();
+		let favoriteAnimal = faker.animal.cetacean();
+		let isActive = true;
+
+		let user = new User({
+			userId,
+			username,
+			fullName,
+			age,
+			gender,
+			email,
+			address,
+			sal,
+			favoriteColor,
+			favoriteAnimal,
+			isActive,
+		});
+		await user.save();
+		res.status(201).json(user);
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send('Server Error');
+	}
+}
+
+async function updateUserV2(req, res) {
+	const {
+		fullName,
+		age,
+		email,
+		address,
+		sal,
+		favoriteColor,
+		favoriteAnimal,
+		isActive,
+	} = req.body;
+
+	try {
+		let user = await User.findById(req.params.id);
+		if (!user) return res.status(404).json({ message: 'User not found' });
+
+		user.email = email || user.email;
+		user.age = age || user.age;
+		user.fullName = fullName || user.fullName;
+		user.isActive = isActive || user.isActive;
+		user.favoriteColor = favoriteColor || user.favoriteColor;
+		user.favoriteAnimal = favoriteAnimal || user.favoriteAnimal;
+		user.address = address || user.address;
+		user.sal = sal || user.sal;
+
+		await user.save();
+		res.json(user);
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send('Server Error');
+	}
+}
+
+async function deleteUserV2(req, res) {
+	try {
+		let userId = Number(req.params.userId);
+		const users = await User.find({ userId: userId });
+		console.log('removing user object: ', users);
+		if (!users) return res.status(404).json({ message: 'User not found' });
+		let idPk = users[0].id;
+		console.log('Removing User:: ', idPk);
+		await User.findByIdAndDelete(idPk);
+		res.json({ message: 'User removed' });
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send('Server Error');
+	}
+}
+
+async function getUserByIdV2(req, res) {
+	try {
+		const user = await User.findById(req.params.id);
+		console.log('removing user: ', user?.username);
+		if (!user) return res.status(404).json({ message: 'User not found' });
+		res.json({ ...user });
+	} catch (err) {
+		console.error(err.message);
+		res.status(500).send('Server Error');
+	}
+}
+
+///CURD operation  in file//////////////////////////////////////////////////////////////////
 async function loadAllUsers() {
 	try {
 		const filePath = path.join(__dirname, 'users.json');
@@ -149,26 +281,46 @@ async function searchUserByName(req, res) {
 
 async function createUser(req, res) {
 	let usersList = await loadAllUsers();
+
 	let requestNewUser = req.body;
 
-	usersList.sort((a, b) => (a.userId > b.userId ? 1 : -1));
+	let isUniqueUserName = usersList.some(
+		(user) => user.username === requestNewUser.username,
+	);
+	console.log(
+		'username ',
+		requestNewUser.username,
+		'is unique ? ',
+		isUniqueUserName,
+	);
+	if (isUniqueUserName) {
+		const response = {
+			status: 400,
+			message: 'User Already exists!',
+		};
 
-	let listLength = usersList.length - 1;
+		res.status(400).json(response);
+	} else {
+		usersList.sort((a, b) => (a.userId > b.userId ? 1 : -1));
 
-	requestNewUser.userId = listLength + Math.round(Math.random() * 1000000000);
-	requestNewUser.city = faker.address.city();
-	requestNewUser.favoriteColor = faker.color.human();
-	requestNewUser.favoriteAnimal = faker.animal.cetacean();
-	requestNewUser.email = faker.internet.email();
+		let listLength = usersList.length - 1;
 
-	console.log('Creating new user: ', requestNewUser);
+		requestNewUser.userId =
+			listLength + Math.round(Math.random() * 1000000000);
+		requestNewUser.city = faker.location.city();
+		requestNewUser.favoriteColor = faker.color.human();
+		requestNewUser.favoriteAnimal = faker.animal.cetacean();
+		requestNewUser.email = faker.internet.email();
 
-	usersList.push(requestNewUser);
+		console.log('Creating new user: ', requestNewUser);
 
-	const jsonString = JSON.stringify(usersList, null, 2);
+		usersList.push(requestNewUser);
 
-	writeToFile(jsonString);
-	res.send(requestNewUser);
+		const jsonString = JSON.stringify(usersList, null, 2);
+
+		writeToFile(jsonString);
+		res.send(requestNewUser);
+	}
 }
 
 async function deleteUser(req, res) {
@@ -196,6 +348,32 @@ async function deleteUser(req, res) {
 	res.send(deleteUser);
 }
 
+async function updateUser(req, res) {
+	let usersList = await loadAllUsers();
+
+	let requestUpdateUser = req.body;
+
+	console.log('requestUpdateUser', requestUpdateUser);
+
+	usersList.sort((a, b) => (a.userId > b.userId ? 1 : -1));
+
+	const updatedUsersList = usersList.map((user) =>
+		user.userId === requestUpdateUser.userId
+			? { ...user, ...requestUpdateUser }
+			: user,
+	);
+
+	console.log('Updating user: ', updatedUsersList);
+
+	usersList.push(updatedUsersList);
+
+	const jsonString = JSON.stringify(usersList, null, 2);
+
+	writeToFile(jsonString);
+
+	res.send(requestUpdateUser);
+}
+
 async function writeToFile(jsonString) {
 	// @ts-ignore
 	fs.writeFile('users.json', jsonString, (err) => {
@@ -206,3 +384,5 @@ async function writeToFile(jsonString) {
 		}
 	});
 }
+
+
