@@ -1,10 +1,8 @@
 const mongoose = require('mongoose');
-
+const url = 'mongodb://localhost:27017';
 const connectDB = async () => {
 	try {
-		await mongoose.connect('mongodb://localhost:27017/crud', {
-		
-		});
+		await mongoose.connect(url, {});
 		console.log('MongoDB connected');
 	} catch (err) {
 		console.error(err.message);
@@ -13,3 +11,4 @@ const connectDB = async () => {
 };
 
 module.exports = connectDB;
+

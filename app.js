@@ -57,19 +57,28 @@ app.listen(port, () => {
 });
 
 ///CURD operation in MongoDB////////////////////////////////////////////////////////////////
-
+const ERROR_500 = {
+	message: 'MongoDB: Error while database opeartion.',
+};
 async function getAllUsersV2(req, res) {
 	try {
 		const users = await User.find();
 		res.json(users);
 	} catch (err) {
 		console.error(err.message);
-		res.status(500).send('Server Error');
+		res.status(500).send(ERROR_500);
 	}
 }
 
 async function createUserV2(req, res) {
 	const { username, fullName, age, gender } = req.body;
+
+	const users = await User.find({ username: username });
+	console.log(users);
+	if (users.length > 0)
+		return res.status(400).json({
+			message: 'Username already exists, Try with another username!',
+		});
 
 	try {
 		let userId = Math.floor(Math.random() * 100000000);
@@ -98,7 +107,7 @@ async function createUserV2(req, res) {
 		res.status(201).json(user);
 	} catch (err) {
 		console.error(err.message);
-		res.status(500).send('Server Error');
+		res.status(500).send(ERROR_500);
 	}
 }
 
@@ -131,7 +140,7 @@ async function updateUserV2(req, res) {
 		res.json(user);
 	} catch (err) {
 		console.error(err.message);
-		res.status(500).send('Server Error');
+		res.status(500).send(ERROR_500);
 	}
 }
 
@@ -147,7 +156,7 @@ async function deleteUserV2(req, res) {
 		res.json({ message: 'User removed' });
 	} catch (err) {
 		console.error(err.message);
-		res.status(500).send('Server Error');
+		res.status(500).send(ERROR_500);
 	}
 }
 
@@ -159,7 +168,7 @@ async function getUserByIdV2(req, res) {
 		res.json({ ...user });
 	} catch (err) {
 		console.error(err.message);
-		res.status(500).send('Server Error');
+		res.status(500).send(ERROR_500);
 	}
 }
 
