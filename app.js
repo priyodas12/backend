@@ -1,4 +1,4 @@
-const faker = require('faker');
+const { faker } = require('@faker-js/faker');
 const { isUtf8 } = require('buffer');
 const { error } = require('console');
 const { getRandomValues } = require('crypto');
@@ -24,6 +24,8 @@ app.get('/application/health/status', (req, res) => {
 app.get('/api/v1/users/', getAllUsers);
 app.get('/api/v1/users/:userId', getUserById);
 app.get('/api/v1/users/search/:searchString', searchUserByName);
+app.post('/api/v1/users/', createUser);
+app.delete('/api/v1/users/:userId', deleteUser);
 
 // Start the server
 app.listen(port, () => {
@@ -143,4 +145,64 @@ async function searchUserByName(req, res) {
 		console.error('Error fetching users:', error);
 		return res.status(500).send('Error fetching users');
 	}
+}
+
+async function createUser(req, res) {
+	let usersList = await loadAllUsers();
+	let requestNewUser = req.body;
+
+	usersList.sort((a, b) => (a.userId > b.userId ? 1 : -1));
+
+	let listLength = usersList.length - 1;
+
+	requestNewUser.userId = listLength + Math.round(Math.random() * 1000000000);
+	requestNewUser.city = faker.address.city();
+	requestNewUser.favoriteColor = faker.color.human();
+	requestNewUser.favoriteAnimal = faker.animal.cetacean();
+	requestNewUser.email = faker.internet.email();
+
+	console.log('Creating new user: ', requestNewUser);
+
+	usersList.push(requestNewUser);
+
+	const jsonString = JSON.stringify(usersList, null, 2);
+
+	writeToFile(jsonString);
+	res.send(requestNewUser);
+}
+
+async function deleteUser(req, res) {
+	let usersList = await loadAllUsers();
+
+	let deleteUserId = +req.params.userId;
+
+	console.log('deleteUserId: ', deleteUserId);
+
+	usersList.sort((a, b) => (a.userId > b.userId ? 1 : -1));
+
+	let deleteUser = usersList.filter((usr) => usr.userId === deleteUserId);
+
+	console.log('Deleting  user: ', deleteUser);
+
+	usersList.splice(
+		usersList.findIndex((a) => a.id === deleteUserId),
+		1,
+	);
+
+	const jsonString = JSON.stringify(usersList, null, 2);
+
+	writeToFile(jsonString);
+
+	res.send(deleteUser);
+}
+
+async function writeToFile(jsonString) {
+	// @ts-ignore
+	fs.writeFile('users.json', jsonString, (err) => {
+		if (err) {
+			console.error('Error writing file:', err);
+		} else {
+			console.log('File has been written');
+		}
+	});
 }
