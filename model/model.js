@@ -7,42 +7,44 @@ const UserSchema = new mongoose.Schema({
 		required: true,
 		unique: true,
 	},
-	username: {
+	userName: {
 		type: String,
 		required: true,
 		unique: true,
 	},
-	fullName: {
+	password: {
 		type: String,
 		required: true,
 	},
-	email: {
+	firstName: {
 		type: String,
 		required: true,
-		unique: true,
 	},
-	isActive: {
-		type: Boolean,
+	lastName: {
+		type: String,
+		required: true,
+	},
+	emailId: {
+		type: String,
+		required: true,
+	},
+	userType: {
+		type: String,
+	},
+	city: {
+		type: String,
+	},
+	designation: {
+		type: String,
 	},
 	gender: {
-		type: String,
-		required: true,
-	},
-	address: {
 		type: String,
 	},
 	age: {
 		type: Number,
-		required: true,
 	},
-	favoriteColor: {
-		type: String,
-	},
-	sal: {
+	salary: {
 		type: Number,
-	},
-	favoriteAnimal: {
-		type: String,
 	},
 });
 
